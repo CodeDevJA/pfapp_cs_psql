@@ -28,6 +28,48 @@ public class PsqlTransactionService : ITransactionService
         this.userService = userService;
     }
 
+    public void GetAllTransactions()
+    {
+        try
+        {
+            User? user = userService.GetLoggedInUser();
+            if (user == null)
+            {
+                throw new ArgumentException("You are not logged in.");
+            }
+
+            var sql = @"
+                SELECT transaction_id, type, title, amount, date 
+                FROM transactions 
+                INNER JOIN users
+                ON users.user_id = transactions.loggedinuser_id
+                WHERE loggedinuser_id = @loggedinuser_id
+                ORDER BY date DESC";
+
+            using var cmd = new NpgsqlCommand(sql, this.connection);
+            cmd.Parameters.AddWithValue("@loggedinuser_id", user.UserId);
+
+            using var reader = cmd.ExecuteReader();
+            Console.WriteLine(" ");
+            Console.WriteLine("Your transactions:");
+            while (reader.Read())
+            {
+                Console.WriteLine(" ");
+                Console.WriteLine($"ID: {TextColor.Cyan}{reader["transaction_id"]}{TextColor.Reset}");
+                Console.WriteLine($"Type: {reader["type"]}");
+                Console.WriteLine($"Title: {reader["title"]}");
+                Console.WriteLine($"Amount: {TextColor.Yellow}{reader["amount"]}{TextColor.Reset}");
+                Console.WriteLine($"Date: {reader["date"]}");
+                Console.WriteLine(" ");
+                Console.WriteLine("--------------------------");
+            }
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message} ");
+        }
+    }
+
     public void GetBalance()
     {
         try
