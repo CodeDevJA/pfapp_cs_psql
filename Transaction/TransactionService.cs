@@ -69,7 +69,7 @@ public class PsqlTransactionService : ITransactionService
             Console.WriteLine($"Error: {ex.Message} ");
         }
     }
-    
+
     public void GetBalance()
     {
         try
@@ -88,13 +88,28 @@ public class PsqlTransactionService : ITransactionService
                 INNER JOIN users
                 ON users.user_id = transactions.loggedinuser_id
                 WHERE loggedinuser_id = @loggedinuser_id";
-            using var cmd = new NpgsqlCommand(sql, this.connection);
-            cmd.Parameters.AddWithValue("@loggedinuser_id", user.UserId);
 
-            var balance = cmd.ExecuteScalar();
-            Console.WriteLine($"Your {TextColor.Yellow}total balance{TextColor.Reset} is: {TextColor.Yellow}{balance}{TextColor.Reset}");
+            using var transaction = this.connection.BeginTransaction(); // Begin transaction
+            try
+            {
+                using var cmd = new NpgsqlCommand(sql, this.connection, transaction);
+                cmd.Parameters.AddWithValue("@loggedinuser_id", user.UserId);
+
+                var balance = cmd.ExecuteScalar();
+
+                // Commit transaction if everything is successful
+                transaction.Commit();
+
+                Console.WriteLine($"Your {TextColor.Yellow}total balance{TextColor.Reset} is: {TextColor.Yellow}{balance}{TextColor.Reset}");
+            }
+            catch
+            {
+                // Rollback transaction in case of any error
+                transaction.Rollback();
+                throw;
+            }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex.Message} ");
         }
@@ -439,7 +454,7 @@ public class PsqlTransactionService : ITransactionService
             }
 
             GetAllTransactions();
-            Console.WriteLine($"Search for the transaction {TextColor.Cyan}ID{TextColor.Reset} and reuse its value when selecting witch transaction you want to {TextColor.Red}remove{TextColor.Reset}: ");
+            Console.WriteLine($"Search for the transaction {TextColor.Cyan}ID{TextColor.Reset} and reuse its value when selecting which transaction you want to {TextColor.Red}remove{TextColor.Reset}: ");
             Console.WriteLine(" ");
             Console.WriteLine(" ");
 
@@ -447,27 +462,49 @@ public class PsqlTransactionService : ITransactionService
             string transactionIdInput = Console.ReadLine()!;
             Guid transactionId = Guid.Parse(transactionIdInput);
 
-            var sql = @"
-                DELETE FROM transactions 
-                WHERE transaction_id = @transaction_id AND loggedinuser_id = @loggedinuser_id";
-            using var cmd = new NpgsqlCommand(sql, this.connection);
-            cmd.Parameters.AddWithValue("@transaction_id", transactionId);
-            cmd.Parameters.AddWithValue("@loggedinuser_id", user.UserId);
+            var sql = @"DELETE FROM transactions 
+                        WHERE transaction_id = @transaction_id AND loggedinuser_id = @loggedinuser_id";
 
-            int rowsAffected = cmd.ExecuteNonQuery();
-            if (rowsAffected > 0)
+            using (var transaction = this.connection.BeginTransaction())
             {
-                Console.WriteLine($"Transaction with ID {transactionId} was successfully removed.");
-                GetAllTransactions();
-            }
-            else
-            {
-                Console.WriteLine("No transaction found with the given ID.");
+                try
+                {
+                    using (var cmd = new NpgsqlCommand(sql, this.connection))
+                    {
+                        cmd.Transaction = transaction;
+                        cmd.Parameters.AddWithValue("@transaction_id", transactionId);
+                        cmd.Parameters.AddWithValue("@loggedinuser_id", user.UserId);
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine($"Transaction with ID {transactionId} was successfully removed.");
+                            GetAllTransactions();
+
+                            // Commit the transaction if everything is successful
+                            transaction.Commit();
+                        }
+                        else
+                        {
+                            Console.WriteLine("No transaction found with the given ID.");
+                            // Rollback the transaction if no rows were affected
+                            transaction.Rollback();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Rollback the transaction in case of any errors
+                    transaction.Rollback();
+                    Console.WriteLine($"Error: {ex.Message}");
+                    throw;
+                }
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message} ");
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 }
