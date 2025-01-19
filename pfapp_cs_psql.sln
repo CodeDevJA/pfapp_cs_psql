@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pfapp_cs_psql", "pfapp_cs_psql.csproj", "{0BE3190A-4E0B-8217-67A9-257EC215BE76}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0BE3190A-4E0B-8217-67A9-257EC215BE76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BE3190A-4E0B-8217-67A9-257EC215BE76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BE3190A-4E0B-8217-67A9-257EC215BE76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BE3190A-4E0B-8217-67A9-257EC215BE76}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {67F1E834-6763-47AE-85F6-1EE2921C1658}
+	EndGlobalSection
+EndGlobal
